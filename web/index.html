@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GapFinder — AI Competitor Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:     #0a0a0f;
+      --grey-900:  #111118;
+      --grey-800:  #1c1c27;
+      --grey-700:  #2e2e3e;
+      --grey-500:  #6b6b85;
+      --grey-300:  #c2c2d4;
+      --grey-100:  #f0f0f7;
+      --white:     #ffffff;
+
+      --grad-1:    #7c3aed;
+      --grad-2:    #3b82f6;
+      --grad-3:    #ec4899;
+      --grad-4:    #f97316;
+
+      --gradient:  linear-gradient(135deg, var(--grad-1) 0%, var(--grad-2) 40%, var(--grad-3) 75%, var(--grad-4) 100%);
+      --gradient-text: linear-gradient(135deg, #a78bfa 0%, #60a5fa 45%, #f472b6 100%);
+
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--white);
+      color: var(--black);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Gradient text utility ─────────────────────────────────── */
+    .grad-text {
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Noise overlay for depth ───────────────────────────────── */
+    .noise::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    /* ── NAV ───────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 48px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      color: var(--black);
+    }
+
+    .nav-logo .logo-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--grey-500);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--black); }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--grey-500);
+    }
+    .btn-ghost:hover { color: var(--black); background: var(--grey-100); }
+
+    .btn-primary {
+      background: var(--black);
+      color: var(--white);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+
+    .btn-gradient {
+      background: var(--gradient);
+      color: var(--white);
+      box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+    }
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(124,58,237,0.45);
+    }
+
+    .btn-lg {
+      padding: 16px 32px;
+      font-size: 1rem;
+      border-radius: var(--radius-md);
+    }
+
+    /* ── HERO ──────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      padding: 120px 48px 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%,
+        rgba(124,58,237,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%,
+        rgba(236,72,153,0.04) 0%, transparent 60%);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(124,58,237,0.15);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--grad-1);
+      margin-bottom: 28px;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--grad-1);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 6vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      max-width: 900px;
+      margin-bottom: 24px;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 400;
+      color: var(--grey-500);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 44px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 80px;
+    }
+
+    /* ── PRODUCT MOCKUP ────────────────────────────────────────── */
+    .hero-mockup {
+      width: 100%;
+      max-width: 1100px;
+      position: relative;
+    }
+
+    .mockup-shell {
+      background: var(--grey-900);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 50px 100px rgba(0,0,0,0.4),
+        0 20px 40px rgba(124,58,237,0.15);
+    }
+
+    .mockup-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: var(--grey-800);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .mockup-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+    .mockup-dot.r { background: #ff5f57; }
+    .mockup-dot.y { background: #ffbd2e; }
+    .mockup-dot.g { background: #28c940; }
+
+    .mockup-url {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      color: var(--grey-500);
+      margin: 0 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .mockup-body {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 520px;
+    }
+
+    .mock-sidebar {
+      background: var(--grey-800);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 24px 16px;
+    }
+
+    .mock-sidebar-section {
+      margin-bottom: 24px;
+    }
+
+    .mock-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--grey-500);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .mock-slider-row {
+      margin-bottom: 10px;
+    }
+
+    .mock-slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--grey-300);
+      margin-bottom: 4px;
+    }
+
+    .mock-slider-track {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.1);
+      position: relative;
+    }
+
+    .mock-slider-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--gradient);
+    }
+
+    .mock-tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .mock-tag {
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.2);
+      font-size: 0.65rem;
+      color: #a78bfa;
+    }
+
+    .mock-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      background: var(--gradient);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    .mock-main {
+      padding: 24px;
+      background: var(--grey-900);
+    }
+
+    .mock-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .mock-kpi {
+      background: var(--grey-800);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+
+    .mock-kpi-label {
+      font-size: 0.65rem;
+      color: var(--grey-500);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .mock-kpi-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.03em;
+    }
+
+    .mock-kpi-delta {
+      font-size: 0.65rem;
+      color: #34d399;
+      margin-top: 2px;
+    }
+
+    .mock-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mock-card {
+      background: var(--grey-800);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .mock-card-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--grey-300);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Scatter chart mock */
+    .mock-scatter {
+      width: 100%;
+      height: 160px;
+      position: relative;
+    }
+
+    .mock-axis-x {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .mock-axis-y {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .mock-threshold-v {
+      position: absolute;
+      left: 25%;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(52,211,153,0.4);
+      border-left: 1px dashed rgba(52,211,153,0.4);
+    }
+
+    .mock-threshold-h {
+      position: absolute;
+      top: 40%;
+      left: 0; right: 0;
+      height: 1px;
+      background: rgba(251,146,60,0.4);
+      border-top: 1px dashed rgba(251,146,60,0.4);
+    }
+
+    .mock-bubble {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Bar chart mock */
+    .mock-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mock-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mock-bar-label {
+      font-size: 0.6rem;
+      color: var(--grey-500);
+      width: 80px;
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mock-bar-track {
+      flex: 1;
+      height: 18px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mock-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+    }
+
+    .mock-bar-pct {
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* Table mock */
+    .mock-table-card {
+      margin-bottom: 12px;
+    }
+
+    .mock-table { width: 100%; }
+
+    .mock-table-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .mock-table-row:last-child { border-bottom: none; }
+
+    .mock-rank {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--grey-500);
+      width: 20px;
+    }
+
+    .mock-cluster-name {
+      flex: 1;
+      font-size: 0.7rem;
+      color: var(--grey-300);
+      font-weight: 500;
+    }
+
+    .mock-score-pill {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+
+    .score-high { background: rgba(52,211,153,0.15); color: #34d399; }
+    .score-mid  { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .score-low  { background: rgba(107,114,128,0.15); color: #9ca3af; }
+
+    .gap-flag {
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: rgba(239,68,68,0.15);
+      color: #f87171;
+      font-weight: 600;
+    }
+
+    /* ── LOGOS ─────────────────────────────────────────────────── */
+    .logos-section {
+      padding: 60px 48px;
+      text-align: center;
+      border-top: 1px solid var(--grey-100);
+    }
+
+    .logos-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--grey-300);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .logos-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+      opacity: 0.35;
+      filter: grayscale(1);
+    }
+
+    .logo-item {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--black);
+    }
+
+    /* ── FEATURES ──────────────────────────────────────────────── */
+    section { padding: 100px 48px; }
+
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--grad-1);
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      max-width: 640px;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--grey-500);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 56px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--grey-100);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .feature-card {
+      background: var(--white);
+      padding: 36px;
+      transition: background 0.2s;
+    }
+
+    .feature-card:hover { background: #fafafa; }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    .icon-purple { background: rgba(124,58,237,0.1); }
+    .icon-blue   { background: rgba(59,130,246,0.1); }
+    .icon-pink   { background: rgba(236,72,153,0.1); }
+    .icon-orange { background: rgba(249,115,22,0.1); }
+    .icon-green  { background: rgba(52,211,153,0.1); }
+    .icon-teal   { background: rgba(20,184,166,0.1); }
+
+    .feature-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--grey-500);
+      line-height: 1.65;
+    }
+
+    /* ── HOW IT WORKS ──────────────────────────────────────────── */
+    .how-section {
+      background: var(--grey-900);
+      color: var(--white);
+    }
+
+    .how-section .section-sub { color: var(--grey-500); }
+
+    .pipeline-steps {
+      display: flex;
+      gap: 0;
+      position: relative;
+      max-width: 1000px;
+    }
+
+    .pipeline-steps::before {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: 28px;
+      right: 28px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3), var(--grad-4));
+    }
+
+    .pipeline-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 0 16px;
+      position: relative;
+    }
+
+    .step-num {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--grey-800);
+      border: 2px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+
+    .step-agent {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--grad-1);
+      margin-bottom: 6px;
+    }
+
+    .step-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--white);
+    }
+
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--grey-500);
+      line-height: 1.5;
+    }
+
+    /* ── MATH ──────────────────────────────────────────────────── */
+    .math-section {
+      background: var(--grey-100);
+    }
+
+    .math-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 900px;
+    }
+
+    .math-card {
+      background: var(--white);
+      border: 1px solid rgba(0,0,0,0.07);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+    }
+
+    .math-card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--grad-1);
+      margin-bottom: 12px;
+    }
+
+    .math-formula {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.9rem;
+      color: var(--black);
+      background: var(--grey-100);
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      border-left: 3px solid;
+      line-height: 1.5;
+    }
+
+    .formula-score { border-color: var(--grad-1); }
+    .formula-gap   { border-color: var(--grad-3); }
+    .formula-density { border-color: var(--grad-2); }
+    .formula-conf  { border-color: var(--grad-4); }
+
+    .math-desc {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+      line-height: 1.6;
+    }
+
+    .math-vars {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .math-var {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--grey-100);
+      border: 1px solid rgba(0,0,0,0.06);
+      font-family: 'SF Mono', monospace;
+      color: var(--grey-500);
+    }
+
+    /* ── METRICS ───────────────────────────────────────────────── */
+    .metrics-section {
+      text-align: center;
+      padding: 100px 48px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .metric-item {}
+
+    .metric-num {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .metric-label {
+      font-size: 0.875rem;
+      color: var(--grey-500);
+      line-height: 1.4;
+    }
+
+    /* ── CTA ───────────────────────────────────────────────────── */
+    .cta-section {
+      background: var(--black);
+      color: var(--white);
+      text-align: center;
+      padding: 120px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 80% at 50% 50%,
+        rgba(124,58,237,0.18) 0%, transparent 65%);
+    }
+
+    .cta-section h2 {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      max-width: 700px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .cta-section p {
+      font-size: 1.1rem;
+      color: var(--grey-500);
+      max-width: 480px;
+      margin: 0 auto 40px;
+      position: relative;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline-white {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-outline-white:hover {
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ── FOOTER ────────────────────────────────────────────────── */
+    footer {
+      padding: 48px;
+      border-top: 1px solid var(--grey-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--black);
+    }
+
+    .footer-logo .logo-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 0.85rem;
+      color: var(--grey-500);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--black); }
+
+    .footer-copy {
+      font-size: 0.8rem;
+      color: var(--grey-300);
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      .hero { padding: 100px 24px 60px; }
+      section { padding: 72px 24px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .pipeline-steps { flex-direction: column; gap: 24px; }
+      .pipeline-steps::before { display: none; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+      .math-grid { grid-template-columns: 1fr; }
+      .mockup-body { grid-template-columns: 1fr; }
+      .mock-sidebar { display: none; }
+      footer { flex-direction: column; text-align: center; }
+      .footer-links { flex-wrap: wrap; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-mark">🔍</div>
+    GapFinder
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#math">Model</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="http://localhost:8000/docs" target="_blank">API Docs</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a class="btn btn-ghost" href="http://localhost:8000/docs" target="_blank">API Docs</a>
+    <a class="btn btn-primary" href="dashboard.html">Open Dashboard →</a>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-bg"></div>
+
+  <div class="hero-badge">
+    <div class="dot"></div>
+    AI-Powered Multi-Agent System
+  </div>
+
+  <h1>Find market gaps<br><span class="grad-text">before your competitors do.</span></h1>
+
+  <p class="hero-sub">
+    GapFinder scrapes competitor reviews at scale, clusters complaint patterns with NLP,
+    and quantifies product opportunities with a proven scoring model — automatically.
+  </p>
+
+  <div class="hero-actions">
+    <a class="btn btn-gradient btn-lg" href="dashboard.html">
+      Open Dashboard
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a class="btn btn-ghost btn-lg" href="http://localhost:8000/docs" target="_blank">
+      View API Docs
+    </a>
+  </div>
+
+  <!-- Product Mockup -->
+  <div class="hero-mockup">
+    <div class="mockup-shell noise">
+      <div class="mockup-bar">
+        <div class="mockup-dot r"></div>
+        <div class="mockup-dot y"></div>
+        <div class="mockup-dot g"></div>
+        <div class="mockup-url">localhost:8501 — GapFinder Dashboard</div>
+      </div>
+      <div class="mockup-body">
+        <!-- Sidebar -->
+        <div class="mock-sidebar">
+          <div class="mock-sidebar-section">
+            <div class="mock-label">Competitors</div>
+            <div class="mock-tag-row">
+              <span class="mock-tag">Asana</span>
+              <span class="mock-tag">Jira</span>
+              <span class="mock-tag">Monday</span>
+              <span class="mock-tag">Linear</span>
+              <span class="mock-tag">ClickUp</span>
+            </div>
+          </div>
+          <div class="mock-sidebar-section">
+            <div class="mock-label">Scoring Weights</div>
+            <div class="mock-slider-row">
+              <div class="mock-slider-label"><span>α Demand</span><span style="color:#a78bfa">0.5</span></div>
+              <div class="mock-slider-track"><div class="mock-slider-fill" style="width:50%"></div></div>
+            </div>
+            <div class="mock-slider-row">
+              <div class="mock-slider-label"><span>β Competition</span><span style="color:#60a5fa">0.3</span></div>
+              <div class="mock-slider-track"><div class="mock-slider-fill" style="width:30%"></div></div>
+            </div>
+            <div class="mock-slider-row">
+              <div class="mock-slider-label"><span>γ Sentiment</span><span style="color:#f472b6">0.2</span></div>
+              <div class="mock-slider-track"><div class="mock-slider-fill" style="width:20%"></div></div>
+            </div>
+          </div>
+          <div class="mock-sidebar-section">
+            <div class="mock-label">Gap Thresholds</div>
+            <div class="mock-slider-row">
+              <div class="mock-slider-label"><span>Complaint Rate</span><span style="color:#fb923c">30%</span></div>
+              <div class="mock-slider-track"><div class="mock-slider-fill" style="width:30%"></div></div>
+            </div>
+            <div class="mock-slider-row">
+              <div class="mock-slider-label"><span>Max Coverage</span><span style="color:#34d399">20%</span></div>
+              <div class="mock-slider-track"><div class="mock-slider-fill" style="width:20%"></div></div>
+            </div>
+          </div>
+          <div class="mock-btn">🚀 Run Analysis</div>
+        </div>
+
+        <!-- Main -->
+        <div class="mock-main">
+          <!-- KPIs -->
+          <div class="mock-kpis">
+            <div class="mock-kpi">
+              <div class="mock-kpi-label">📊 Reviews</div>
+              <div class="mock-kpi-value">2,847</div>
+              <div class="mock-kpi-delta">+12% vs last run</div>
+            </div>
+            <div class="mock-kpi">
+              <div class="mock-kpi-label">🗂️ Clusters</div>
+              <div class="mock-kpi-value">14</div>
+              <div class="mock-kpi-delta">K=14, sil=0.31</div>
+            </div>
+            <div class="mock-kpi">
+              <div class="mock-kpi-label">🎯 Gaps Found</div>
+              <div class="mock-kpi-value" style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">5</div>
+              <div class="mock-kpi-delta">+5 opportunities</div>
+            </div>
+            <div class="mock-kpi">
+              <div class="mock-kpi-label">🏆 Top Score</div>
+              <div class="mock-kpi-value">0.78</div>
+              <div class="mock-kpi-delta">Checkout UX</div>
+            </div>
+          </div>
+
+          <!-- Charts row -->
+          <div class="mock-grid-2">
+            <!-- Scatter -->
+            <div class="mock-card">
+              <div class="mock-card-title">🗺️ Opportunity Space</div>
+              <div class="mock-scatter">
+                <div class="mock-axis-x"></div>
+                <div class="mock-axis-y"></div>
+                <div class="mock-threshold-v"></div>
+                <div class="mock-threshold-h"></div>
+                <!-- Bubbles -->
+                <div class="mock-bubble" style="width:44px;height:44px;background:rgba(239,68,68,0.7);left:12%;top:28%;box-shadow:0 0 20px rgba(239,68,68,0.4);" title="Checkout UX"></div>
+                <div class="mock-bubble" style="width:36px;height:36px;background:rgba(239,68,68,0.6);left:18%;top:42%;" title="Mobile App"></div>
+                <div class="mock-bubble" style="width:28px;height:28px;background:rgba(239,68,68,0.5);left:8%;top:22%;" title="API Speed"></div>
+                <div class="mock-bubble" style="width:50px;height:50px;background:rgba(59,130,246,0.5);left:55%;top:30%;"></div>
+                <div class="mock-bubble" style="width:34px;height:34px;background:rgba(59,130,246,0.4);left:70%;top:55%;"></div>
+                <div class="mock-bubble" style="width:24px;height:24px;background:rgba(107,114,128,0.4);left:85%;top:70%;"></div>
+                <div class="mock-bubble" style="width:30px;height:30px;background:rgba(107,114,128,0.3);left:65%;top:75%;"></div>
+              </div>
+            </div>
+
+            <!-- Bars -->
+            <div class="mock-card">
+              <div class="mock-card-title">🔥 Complaint Rates</div>
+              <div class="mock-bars">
+                <div class="mock-bar-row">
+                  <div class="mock-bar-label">Checkout UX</div>
+                  <div class="mock-bar-track"><div class="mock-bar-fill" style="width:78%;background:linear-gradient(90deg,#7c3aed,#ec4899)"><span class="mock-bar-pct">78%</span></div></div>
+                </div>
+                <div class="mock-bar-row">
+                  <div class="mock-bar-label">Support Response</div>
+                  <div class="mock-bar-track"><div class="mock-bar-fill" style="width:62%;background:linear-gradient(90deg,#3b82f6,#7c3aed)"><span class="mock-bar-pct">62%</span></div></div>
+                </div>
+                <div class="mock-bar-row">
+                  <div class="mock-bar-label">Mobile App</div>
+                  <div class="mock-bar-track"><div class="mock-bar-fill" style="width:55%;background:linear-gradient(90deg,#ec4899,#f97316)"><span class="mock-bar-pct">55%</span></div></div>
+                </div>
+                <div class="mock-bar-row">
+                  <div class="mock-bar-label">API Speed</div>
+                  <div class="mock-bar-track"><div class="mock-bar-fill" style="width:42%;background:linear-gradient(90deg,#6b7280,#3b82f6)"><span class="mock-bar-pct">42%</span></div></div>
+                </div>
+                <div class="mock-bar-row">
+                  <div class="mock-bar-label">Pricing</div>
+                  <div class="mock-bar-track"><div class="mock-bar-fill" style="width:28%;background:rgba(107,114,128,0.6)"><span class="mock-bar-pct">28%</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="mock-card mock-table-card">
+            <div class="mock-card-title">📈 Opportunity Rankings</div>
+            <div class="mock-table">
+              <div class="mock-table-row">
+                <div class="mock-rank">#1</div>
+                <div class="mock-cluster-name">Mobile Checkout Simplification</div>
+                <div class="mock-score-pill score-high">0.78</div>
+                <div class="gap-flag">🎯 GAP</div>
+              </div>
+              <div class="mock-table-row">
+                <div class="mock-rank">#2</div>
+                <div class="mock-cluster-name">Customer Support Response Time</div>
+                <div class="mock-score-pill score-high">0.71</div>
+                <div class="gap-flag">🎯 GAP</div>
+              </div>
+              <div class="mock-table-row">
+                <div class="mock-rank">#3</div>
+                <div class="mock-cluster-name">API Rate Limiting & Speed</div>
+                <div class="mock-score-pill score-mid">0.53</div>
+                <span></span>
+              </div>
+              <div class="mock-table-row">
+                <div class="mock-rank">#4</div>
+                <div class="mock-cluster-name">Mobile App Performance</div>
+                <div class="mock-score-pill score-mid">0.47</div>
+                <span></span>
+              </div>
+              <div class="mock-table-row">
+                <div class="mock-rank">#5</div>
+                <div class="mock-cluster-name">Onboarding & Documentation</div>
+                <div class="mock-score-pill score-low">0.31</div>
+                <span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOGOS ─────────────────────────────────────────────────────────── -->
+<div class="logos-section">
+  <div class="logos-label">Works with reviews from</div>
+  <div class="logos-row">
+    <div class="logo-item">G2</div>
+    <div class="logo-item">Trustpilot</div>
+    <div class="logo-item">App Store</div>
+    <div class="logo-item">Google Play</div>
+    <div class="logo-item">Capterra</div>
+    <div class="logo-item">Reddit</div>
+    <div class="logo-item">Product Hunt</div>
+  </div>
+</div>
+
+<!-- ── FEATURES ───────────────────────────────────────────────────────── -->
+<section id="features">
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything you need to<br>stay ahead.</h2>
+  <p class="section-sub">
+    A full-stack intelligence system — from raw reviews to quantified opportunities — in seconds.
+  </p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon icon-purple">🕷️</div>
+      <div class="feature-title">Multi-Source Scraping</div>
+      <p class="feature-desc">Collects reviews from G2, Trustpilot, App Store, and more. Handles pagination, rate limiting, deduplication, and retry logic automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-blue">🧠</div>
+      <div class="feature-title">Semantic Clustering</div>
+      <p class="feature-desc">Sentence-transformer embeddings + K-Means with automatic silhouette-based K selection. Groups complaints into meaningful feature themes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-pink">🎯</div>
+      <div class="feature-title">Gap Detection</div>
+      <p class="feature-desc">Identifies underserved clusters where complaint rate is high but competitor coverage is low — the exact whitespace for new features.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-orange">📊</div>
+      <div class="feature-title">Opportunity Scoring</div>
+      <p class="feature-desc">Weighted model: α·Demand − β·Competition + γ·Sentiment with confidence scaling. Tunable weights via admin panel or API.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-green">🔌</div>
+      <div class="feature-title">REST API</div>
+      <p class="feature-desc">Full FastAPI backend with Pydantic validation. Run pipelines, query opportunities, adjust weights — all programmable.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon icon-teal">📐</div>
+      <div class="feature-title">Explainable Scores</div>
+      <p class="feature-desc">Every score decomposes into demand, competition, and sentiment components. Evidence reviews and competitor coverage included.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ───────────────────────────────────────────────────── -->
+<section class="how-section" id="how">
+  <div class="section-label" style="color:#a78bfa">How it works</div>
+  <h2 class="section-title" style="color:white">Four agents. One answer.</h2>
+  <p class="section-sub">
+    Each agent specializes in one stage. The Orchestrator chains them automatically.
+  </p>
+  <div class="pipeline-steps">
+    <div class="pipeline-step">
+      <div class="step-num">🕷️</div>
+      <div class="step-agent">Agent 1</div>
+      <div class="step-name">Scraper</div>
+      <div class="step-desc">Collects & deduplicates reviews from multiple sources into structured records</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">🧠</div>
+      <div class="step-agent">Agent 2</div>
+      <div class="step-name">Extractor</div>
+      <div class="step-desc">NLP enrichment — sentiment, embeddings, clustering, aspect tagging, keyword themes</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">🔍</div>
+      <div class="step-agent">Agent 3</div>
+      <div class="step-name">Gap Detector</div>
+      <div class="step-desc">Computes competition density and complaint frequency — flags underserved clusters</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-num">🏆</div>
+      <div class="step-agent">Agent 4</div>
+      <div class="step-name">Scorer</div>
+      <div class="step-desc">Quantile-normalized weighted model with confidence scaling produces final rankings</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MATH MODEL ─────────────────────────────────────────────────────── -->
+<section class="math-section" id="math">
+  <div class="section-label">The Model</div>
+  <h2 class="section-title">Mathematically rigorous,<br>not just vibes.</h2>
+  <p class="section-sub">
+    Every opportunity score is reproducible, explainable, and derived from first principles.
+  </p>
+  <div class="math-grid">
+    <div class="math-card">
+      <div class="math-card-label">Opportunity Score</div>
+      <div class="math-formula formula-score">Score_k = α·Q(Demand_k)<br>         − β·Q(Competition_k)<br>         + γ·Q(NegSent_k)</div>
+      <p class="math-desc">Quantile-normalized components for robustness against heavy tails. Default weights: α=0.5, β=0.3, γ=0.2.</p>
+      <div class="math-vars">
+        <span class="math-var">α = demand weight</span>
+        <span class="math-var">β = competition weight</span>
+        <span class="math-var">γ = sentiment weight</span>
+        <span class="math-var">Q(·) = quantile rank</span>
+      </div>
+    </div>
+    <div class="math-card">
+      <div class="math-card-label">Gap Severity (Continuous)</div>
+      <div class="math-formula formula-gap">GapSev_k = σ(a·z(CR_k)<br>              − b·z(CD_k)<br>              + c·z(Demand_k))</div>
+      <p class="math-desc">Logistic squashing to [0,1]. Ranks gaps even when they narrowly miss hard thresholds, preventing cliff-edge decisions.</p>
+      <div class="math-vars">
+        <span class="math-var">σ = logistic</span>
+        <span class="math-var">z(·) = z-score</span>
+        <span class="math-var">CR = complaint rate</span>
+        <span class="math-var">CD = competition density</span>
+      </div>
+    </div>
+    <div class="math-card">
+      <div class="math-card-label">Competition Density</div>
+      <div class="math-formula formula-density">share_jk = (n_jk + m·p_k) / (n_j + m)<br><br>density_k = (1/J) Σ 1[share_jk > τ]</div>
+      <p class="math-desc">Laplace smoothing prevents small-sample bias. Combines per-competitor review evidence into a single coverage metric.</p>
+      <div class="math-vars">
+        <span class="math-var">m = smoothing strength</span>
+        <span class="math-var">p_k = global cluster proportion</span>
+        <span class="math-var">J = total competitors</span>
+        <span class="math-var">τ = coverage threshold</span>
+      </div>
+    </div>
+    <div class="math-card">
+      <div class="math-card-label">Confidence Scaling</div>
+      <div class="math-formula formula-conf">Conf_k = 1 − exp(−n_k / η)<br><br>Final_k = Conf_k × Score_k</div>
+      <p class="math-desc">Exponential saturation penalizes small clusters. Large clusters (n >> η) approach confidence=1. Prevents noise dominating rankings.</p>
+      <div class="math-vars">
+        <span class="math-var">n_k = cluster size</span>
+        <span class="math-var">η = half-saturation point (50)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── METRICS ────────────────────────────────────────────────────────── -->
+<section class="metrics-section">
+  <div class="section-label" style="text-align:center">Impact</div>
+  <h2 class="section-title" style="margin:0 auto 56px;text-align:center">Built for real decisions.</h2>
+  <div class="metrics-grid">
+    <div class="metric-item">
+      <div class="metric-num grad-text">&gt;80%</div>
+      <div class="metric-label">Gap detection<br>accuracy target</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-num grad-text">70%</div>
+      <div class="metric-label">Faster than manual<br>competitive research</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-num grad-text">10+</div>
+      <div class="metric-label">Actionable insights<br>per report</div>
+    </div>
+    <div class="metric-item">
+      <div class="metric-num grad-text">4</div>
+      <div class="metric-label">Specialized AI agents<br>in the pipeline</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <h2>Stop guessing.<br><span class="grad-text">Start building with data.</span></h2>
+  <p>Point GapFinder at your competitors. Get a ranked list of product opportunities in minutes.</p>
+  <div class="cta-actions">
+    <a class="btn btn-gradient btn-lg" href="dashboard.html">Open Dashboard →</a>
+    <a class="btn btn-outline-white btn-lg" href="http://localhost:8000/docs" target="_blank">Explore API</a>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-logo">
+    <div class="logo-mark">🔍</div>
+    GapFinder
+  </div>
+  <ul class="footer-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#math">Model</a></li>
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="http://localhost:8000/docs" target="_blank">API Docs</a></li>
+    <li><a href="https://github.com/francesca-tabor-ai/Competitor-Intelligence-Market-Gap-Finder" target="_blank">GitHub</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 GapFinder. Built with AI.</div>
+</footer>
+
+</body>
+</html>

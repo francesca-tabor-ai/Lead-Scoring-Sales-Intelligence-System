@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GapFinder — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:    #0a0a0f;
+      --bg:       #f8f8fc;
+      --surface:  #ffffff;
+      --border:   rgba(0,0,0,0.07);
+      --grey-900: #111118;
+      --grey-700: #2e2e3e;
+      --grey-500: #6b6b85;
+      --grey-300: #c2c2d4;
+      --grey-100: #f0f0f7;
+
+      --grad-1:   #7c3aed;
+      --grad-2:   #3b82f6;
+      --grad-3:   #ec4899;
+      --grad-4:   #f97316;
+      --green:    #10b981;
+      --red:      #ef4444;
+      --amber:    #f59e0b;
+
+      --gradient: linear-gradient(135deg, #7c3aed 0%, #3b82f6 40%, #ec4899 75%, #f97316 100%);
+
+      --sidebar:  240px;
+      --radius:   14px;
+      --font:     'Inter', -apple-system, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--black);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .grad-text {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar) 1fr;
+      grid-template-rows: 56px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ───────────────────────────────────────────────── */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      color: var(--black);
+    }
+
+    .logo-mark {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .topbar-sep {
+      width: 1px; height: 20px;
+      background: var(--border);
+    }
+
+    .topbar-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--grey-500);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--green);
+    }
+
+    .status-dot::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .topbar-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-black {
+      background: var(--black);
+      color: white;
+    }
+    .btn-black:hover { opacity: 0.85; }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--grey-500);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--grey-100); color: var(--black); }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {}
+
+    .sidebar-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--grey-300);
+      margin-bottom: 12px;
+    }
+
+    .competitor-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .competitor-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--grey-100);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--grey-700);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .competitor-chip:hover { background: #e8e8f5; }
+
+    .chip-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    .chip-count {
+      font-size: 0.65rem;
+      color: var(--grey-300);
+      background: white;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* Sliders */
+    .weight-sliders { display: flex; flex-direction: column; gap: 14px; }
+
+    .weight-row {}
+
+    .weight-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .weight-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--grey-700);
+    }
+
+    .weight-value {
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: 'SF Mono', monospace;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"].purple { background: linear-gradient(to right, var(--grad-1) 0%, var(--grad-1) 50%, var(--grey-100) 50%); }
+    input[type="range"].blue   { background: linear-gradient(to right, var(--grad-2) 0%, var(--grad-2) 30%, var(--grey-100) 30%); }
+    input[type="range"].pink   { background: linear-gradient(to right, var(--grad-3) 0%, var(--grad-3) 20%, var(--grey-100) 20%); }
+    input[type="range"].orange { background: linear-gradient(to right, var(--grad-4) 0%, var(--grad-4) 30%, var(--grey-100) 30%); }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid var(--grey-300);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+
+    .run-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--gradient);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(124,58,237,0.3);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .run-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(124,58,237,0.4);
+    }
+
+    .run-btn.loading { opacity: 0.7; pointer-events: none; }
+
+    /* ── Main Content ──────────────────────────────────────────── */
+    .main {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── KPI Bar ───────────────────────────────────────────────── */
+    .kpi-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: box-shadow 0.15s;
+    }
+
+    .kpi-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    }
+
+    .kpi-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--grey-500);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .kpi-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .kpi-delta {
+      font-size: 0.7rem;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    .kpi-delta.warn { color: var(--amber); }
+    .kpi-delta.neutral { color: var(--grey-300); }
+
+    /* ── Top Opportunity Card ──────────────────────────────────── */
+    .hero-card {
+      background: var(--black);
+      border-radius: var(--radius);
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 280px; height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+    }
+
+    .hero-card-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #a78bfa;
+      margin-bottom: 8px;
+    }
+
+    .hero-card h3 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .hero-card-meta {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+
+    .hero-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hero-meta-label {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .hero-meta-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .hero-card-action {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.5;
+      max-width: 500px;
+    }
+
+    .gauge-container {
+      width: 140px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .gauge-svg { width: 120px; height: 70px; }
+
+    .gauge-score {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.03em;
+      margin-top: 4px;
+    }
+
+    .gauge-sub { font-size: 0.65rem; color: rgba(255,255,255,0.4); }
+
+    /* ── Grid layouts ──────────────────────────────────────────── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--grey-700);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-canvas { width: 100% !important; height: 100% !important; }
+
+    /* ── Opportunity Table ─────────────────────────────────────── */
+    .opp-table { width: 100%; border-collapse: collapse; }
+
+    .opp-table th {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--grey-300);
+      padding: 0 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .opp-table td {
+      padding: 11px 12px;
+      font-size: 0.8rem;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+      vertical-align: middle;
+    }
+
+    .opp-table tr:last-child td { border-bottom: none; }
+
+    .opp-table tr:hover td { background: var(--grey-100); }
+
+    .rank-cell {
+      font-weight: 700;
+      color: var(--grey-300);
+      width: 32px;
+    }
+
+    .cluster-name {
+      font-weight: 600;
+      color: var(--black);
+    }
+
+    .cluster-keywords {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 3px;
+    }
+
+    .kw-tag {
+      font-size: 0.6rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--grey-100);
+      color: var(--grey-500);
+    }
+
+    .score-bar-cell { width: 120px; }
+
+    .score-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--grey-100);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .score-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-top: 3px;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .pct-cell {
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .gap-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      background: rgba(239,68,68,0.1);
+      color: var(--red);
+    }
+
+    .covered-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.62px;
+      font-weight: 600;
+      background: var(--grey-100);
+      color: var(--grey-300);
+      font-size: 0.62rem;
+    }
+
+    .action-text {
+      font-size: 0.72rem;
+      color: var(--grey-500);
+      max-width: 220px;
+      line-height: 1.35;
+    }
+
+    /* ── Tabs ──────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--grey-100);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--grey-500);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      border: none;
+      background: transparent;
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--black);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cluster Explorer ──────────────────────────────────────── */
+    .explorer-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+    }
+
+    .cluster-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .cluster-item {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+
+    .cluster-item:hover, .cluster-item.selected {
+      border-color: var(--grad-1);
+      background: rgba(124,58,237,0.04);
+    }
+
+    .cluster-item-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 4px;
+    }
+
+    .cluster-item-stats {
+      display: flex;
+      gap: 10px;
+    }
+
+    .cluster-stat {
+      font-size: 0.65rem;
+      color: var(--grey-500);
+    }
+
+    .cluster-stat span {
+      font-weight: 700;
+      color: var(--black);
+    }
+
+    .explorer-detail { display: flex; flex-direction: column; gap: 12px; }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .detail-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .detail-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .detail-metric {
+      background: var(--grey-100);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .dm-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .dm-label {
+      font-size: 0.65rem;
+      color: var(--grey-500);
+      margin-top: 2px;
+    }
+
+    .reviews-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .review-item {
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--grey-100);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--grey-700);
+      border-left: 3px solid;
+    }
+
+    .review-item.negative { border-color: var(--red); }
+    .review-item.positive { border-color: var(--green); }
+
+    /* ── Loading spinner ───────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .kpi-bar { grid-template-columns: repeat(3, 1fr); }
+      .grid-3 { grid-template-columns: 1fr; }
+      .explorer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Topbar ──────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="logo" href="index.html">
+        <div class="logo-mark">🔍</div>
+        GapFinder
+      </a>
+      <div class="topbar-sep"></div>
+      <div class="topbar-title">Intelligence Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot" id="statusDot">Pipeline ready</div>
+      <a class="topbar-btn btn-outline" href="http://localhost:8000/docs" target="_blank">API Docs</a>
+      <button class="topbar-btn btn-black" id="topRunBtn">🚀 Run Pipeline</button>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Competitors</div>
+      <div class="competitor-list" id="competitorList">
+        <div class="competitor-chip"><span style="display:flex;align-items:center;gap:6px"><div class="chip-dot" style="background:#7c3aed"></div>Asana-Alt</span><span class="chip-count">150</span></div>
+        <div class="competitor-chip"><span style="display:flex;align-items:center;gap:6px"><div class="chip-dot" style="background:#3b82f6"></div>Salesforce-Alt</span><span class="chip-count">150</span></div>
+        <div class="competitor-chip"><span style="display:flex;align-items:center;gap:6px"><div class="chip-dot" style="background:#ec4899"></div>Jira-Alt</span><span class="chip-count">150</span></div>
+        <div class="competitor-chip"><span style="display:flex;align-items:center;gap:6px"><div class="chip-dot" style="background:#f97316"></div>HubSpot-Alt</span><span class="chip-count">100</span></div>
+        <div class="competitor-chip"><span style="display:flex;align-items:center;gap:6px"><div class="chip-dot" style="background:#10b981"></div>Segment-Alt</span><span class="chip-count">100</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Scoring Weights</div>
+      <div class="weight-sliders">
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">α Demand</span>
+            <span class="weight-value" id="alphaVal" style="color:var(--grad-1)">0.50</span>
+          </div>
+          <input type="range" class="purple" id="alpha" min="0" max="1" step="0.05" value="0.5"
+            oninput="document.getElementById('alphaVal').textContent=parseFloat(this.value).toFixed(2)">
+        </div>
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">β Competition</span>
+            <span class="weight-value" id="betaVal" style="color:var(--grad-2)">0.30</span>
+          </div>
+          <input type="range" class="blue" id="beta" min="0" max="1" step="0.05" value="0.3"
+            oninput="document.getElementById('betaVal').textContent=parseFloat(this.value).toFixed(2)">
+        </div>
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">γ Sentiment</span>
+            <span class="weight-value" id="gammaVal" style="color:var(--grad-3)">0.20</span>
+          </div>
+          <input type="range" class="pink" id="gamma" min="0" max="1" step="0.05" value="0.2"
+            oninput="document.getElementById('gammaVal').textContent=parseFloat(this.value).toFixed(2)">
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Gap Thresholds</div>
+      <div class="weight-sliders">
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">Min Complaint Rate</span>
+            <span class="weight-value" id="crVal" style="color:var(--red)">30%</span>
+          </div>
+          <input type="range" class="orange" id="crThreshold" min="10" max="70" step="5" value="30"
+            oninput="document.getElementById('crVal').textContent=this.value+'%'">
+        </div>
+        <div class="weight-row">
+          <div class="weight-header">
+            <span class="weight-name">Max Coverage</span>
+            <span class="weight-value" id="cdVal" style="color:var(--green)">20%</span>
+          </div>
+          <input type="range" class="orange" id="cdThreshold" min="5" max="50" step="5" value="20"
+            oninput="document.getElementById('cdVal').textContent=this.value+'%'">
+        </div>
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn" onclick="runPipeline()">
+      <span id="runBtnText">🚀 Run Analysis</span>
+    </button>
+  </aside>
+
+  <!-- ── Main Content ────────────────────────────────────────── -->
+  <main class="main" id="mainContent">
+
+    <!-- KPI Bar -->
+    <div class="kpi-bar" id="kpiBar">
+      <div class="kpi-card">
+        <div class="kpi-label">📊 Reviews Analyzed</div>
+        <div class="kpi-value grad-text" id="kpiReviews">—</div>
+        <div class="kpi-delta neutral" id="kpiReviewsDelta">Run pipeline to start</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🗂️ Clusters</div>
+        <div class="kpi-value" id="kpiClusters">—</div>
+        <div class="kpi-delta neutral" id="kpiClustersDelta">Auto-selected K</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🎯 Market Gaps</div>
+        <div class="kpi-value" id="kpiGaps">—</div>
+        <div class="kpi-delta" id="kpiGapsDelta">Underserved clusters</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🏆 Top Score</div>
+        <div class="kpi-value" id="kpiTopScore">—</div>
+        <div class="kpi-delta neutral" id="kpiTopLabel">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">⚠️ Avg Complaint</div>
+        <div class="kpi-value" id="kpiAvgComplaint">—</div>
+        <div class="kpi-delta warn">Across all clusters</div>
+      </div>
+    </div>
+
+    <!-- Hero Opportunity -->
+    <div class="hero-card" id="heroCard" style="display:none">
+      <div>
+        <div class="hero-card-label">🎯 Top Market Gap Identified</div>
+        <h3 id="heroTitle">—</h3>
+        <div class="hero-card-meta">
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Complaint Rate</span>
+            <span class="hero-meta-value" id="heroCR">—</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Coverage</span>
+            <span class="hero-meta-value" id="heroCD">—</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Volume</span>
+            <span class="hero-meta-value" id="heroVol">—</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-label">Keywords</span>
+            <span class="hero-meta-value" id="heroKW" style="font-size:0.8rem">—</span>
+          </div>
+        </div>
+        <div class="hero-card-action" id="heroAction">—</div>
+      </div>
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 70">
+          <path d="M10 60 A50 50 0 0 1 110 60" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <path id="gaugePath" d="M10 60 A50 50 0 0 1 110 60" stroke="url(#gaugeGrad)" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="157"/>
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#7c3aed"/>
+              <stop offset="50%" stop-color="#3b82f6"/>
+              <stop offset="100%" stop-color="#ec4899"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="gauge-score" id="gaugeScore">—</div>
+        <div class="gauge-sub">Opportunity Score</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="card" style="padding:0">
+      <div style="padding:16px 20px 0">
+        <div class="tabs" id="mainTabs">
+          <button class="tab active" onclick="switchTab('rankings', this)">📈 Rankings</button>
+          <button class="tab" onclick="switchTab('charts', this)">🗺️ Analysis</button>
+          <button class="tab" onclick="switchTab('explorer', this)">🔎 Explorer</button>
+        </div>
+      </div>
+
+      <!-- Rankings Tab -->
+      <div class="tab-panel active" id="tab-rankings" style="padding:0 4px 16px">
+        <div style="padding:0 16px">
+          <table class="opp-table" id="oppTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Feature Cluster</th>
+                <th class="score-bar-cell">Score</th>
+                <th>Complaint %</th>
+                <th>Coverage %</th>
+                <th>Volume</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="oppTableBody">
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--grey-300);font-size:0.85rem">
+                Configure competitors and click "Run Analysis" to see opportunities.
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Charts Tab -->
+      <div class="tab-panel" id="tab-charts" style="padding:16px 20px">
+        <div class="grid-2" style="margin-bottom:16px">
+          <div>
+            <div class="card-title">🗺️ Opportunity Space — Complaint Rate vs Competition</div>
+            <div style="position:relative;height:260px">
+              <canvas id="scatterChart" class="card-canvas"></canvas>
+            </div>
+          </div>
+          <div>
+            <div class="card-title">🔥 Complaint Rate by Cluster</div>
+            <div style="position:relative;height:260px">
+              <canvas id="barChart" class="card-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card-title">🔬 Score Component Breakdown</div>
+          <div style="position:relative;height:200px">
+            <canvas id="stackedChart" class="card-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explorer Tab -->
+      <div class="tab-panel" id="tab-explorer" style="padding:16px 20px">
+        <div class="explorer-grid" id="explorerGrid">
+          <div>
+            <div class="sidebar-label" style="margin-bottom:10px">Select a cluster</div>
+            <div class="cluster-list" id="clusterListExplorer"></div>
+          </div>
+          <div class="explorer-detail" id="explorerDetail">
+            <div style="color:var(--grey-300);font-size:0.85rem;padding:40px;text-align:center">
+              Select a cluster from the list to explore its details.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Mock Data (used when API isn't running) ────────────────────────────
+const MOCK_OPPORTUNITIES = [
+  { rank:1, cluster_index:2, label:"Mobile Checkout Simplification", top_keywords:["checkout","cart","payment","form","button"], final_score:0.782, complaint_rate:0.42, competition_raw:0.18, volume:89, is_underserved:true, recommended_action:"🚀 HIGH PRIORITY: Strong whitespace opportunity. 42% complaint rate with only 18% competitor coverage. Prioritize in next sprint.", demand_raw:0.18, components:{"alpha * demand":0.28,"beta * competition":0.05,"gamma * neg_sentiment":0.19}, representative_reviews:["The checkout is really frustrating. The button doesn't work properly. Makes it hard to use.","I keep having issues with payment. The form confusing doesn't work properly. Very disappointed.","The checkout UX needs a lot of work. Thinking of switching."] },
+  { rank:2, cluster_index:5, label:"Customer Support Response Time", top_keywords:["support","ticket","response","help","slow"], final_score:0.709, complaint_rate:0.48, competition_raw:0.12, volume:76, is_underserved:true, recommended_action:"🚀 HIGH PRIORITY: 'Customer Support Response Time' is a strong whitespace opportunity. Prioritize dedicated support tooling.", demand_raw:0.15, components:{"alpha * demand":0.24,"beta * competition":0.04,"gamma * neg_sentiment":0.22}, representative_reviews:["Support is incredibly slow. Tickets sit for days with no response.","Customer service is unhelpful. They close tickets before resolving issues."] },
+  { rank:3, cluster_index:0, label:"API Rate Limiting & Speed", top_keywords:["api","latency","timeout","slow","rate limit"], final_score:0.531, complaint_rate:0.35, competition_raw:0.40, volume:64, is_underserved:false, recommended_action:"📈 MEDIUM PRIORITY: 'API Rate Limiting & Speed' shows meaningful pain with limited competition. Consider adding to roadmap backlog.", demand_raw:0.13, components:{"alpha * demand":0.20,"beta * competition":0.12,"gamma * neg_sentiment":0.16}, representative_reviews:["The API rate limits are too restrictive. We keep hitting timeouts.","Response times are inconsistent. Sometimes fast, sometimes terrible."] },
+  { rank:4, cluster_index:3, label:"Mobile App Performance", top_keywords:["mobile","app","crash","ios","android","freeze"], final_score:0.473, complaint_rate:0.55, competition_raw:0.60, volume:58, is_underserved:false, recommended_action:"⚠️ COMPETITIVE: 'Mobile App Performance' is widely covered by competitors. Feature parity required; focus on differentiation.", demand_raw:0.12, components:{"alpha * demand":0.18,"beta * competition":0.18,"gamma * neg_sentiment":0.17}, representative_reviews:["The mobile app crashes constantly on iOS.","Performance on Android is terrible. Very slow loading."] },
+  { rank:5, cluster_index:1, label:"Onboarding & Documentation", top_keywords:["setup","onboarding","docs","tutorial","guide","confusing"], final_score:0.412, complaint_rate:0.33, competition_raw:0.22, volume:52, is_underserved:false, recommended_action:"📈 MEDIUM PRIORITY: 'Onboarding & Documentation' shows meaningful pain with limited competition. Consider adding to roadmap.", demand_raw:0.11, components:{"alpha * demand":0.17,"beta * competition":0.07,"gamma * neg_sentiment":0.14}, representative_reviews:["The setup process is way too complicated. No good documentation.","Onboarding took forever. The tutorials are outdated."] },
+  { rank:6, cluster_index:4, label:"Pricing & Billing Transparency", top_keywords:["price","billing","charge","expensive","plan"], final_score:0.288, complaint_rate:0.28, competition_raw:0.55, volume:43, is_underserved:false, recommended_action:"⚠️ COMPETITIVE: 'Pricing & Billing Transparency' is widely covered. Focus on differentiated pricing model.", demand_raw:0.09, components:{"alpha * demand":0.14,"beta * competition":0.17,"gamma * neg_sentiment":0.12}, representative_reviews:["Pricing is really confusing. Hidden charges everywhere."] },
+  { rank:7, cluster_index:6, label:"Reporting & Analytics Features", top_keywords:["report","dashboard","export","analytics","chart"], final_score:0.241, complaint_rate:0.25, competition_raw:0.62, volume:38, is_underserved:false, recommended_action:"👀 MONITOR: 'Reporting & Analytics Features' shows early signals. Track over next quarter.", demand_raw:0.08, components:{"alpha * demand":0.12,"beta * competition":0.19,"gamma * neg_sentiment":0.10}, representative_reviews:["The reporting features are very basic compared to competitors."] },
+];
+
+const MOCK_META = { total_reviews: 650, underserved_gaps: 2, total_clusters: 7 };
+
+// ── State ─────────────────────────────────────────────────────────────
+let currentData = null;
+let scatterChart = null, barChart = null, stackedChart = null;
+let selectedCluster = 0;
+
+// ── API calls ─────────────────────────────────────────────────────────
+async function runPipeline() {
+  const btn = document.getElementById('runBtn');
+  const btnText = document.getElementById('runBtnText');
+  const topBtn = document.getElementById('topRunBtn');
+  const dot = document.getElementById('statusDot');
+
+  btn.classList.add('loading');
+  btnText.innerHTML = '<div class="spinner"></div> Analyzing...';
+  dot.textContent = 'Pipeline running...';
+  dot.style.color = 'var(--amber)';
+
+  const alpha = parseFloat(document.getElementById('alpha').value);
+  const beta  = parseFloat(document.getElementById('beta').value);
+  const gamma = parseFloat(document.getElementById('gamma').value);
+  const cr    = parseFloat(document.getElementById('crThreshold').value) / 100;
+  const cd    = parseFloat(document.getElementById('cdThreshold').value) / 100;
+
+  const targets = [
+    { url:"https://mock.com/a", source_type:"mock", product_name:"ProjectMgmt", competitor_name:"Asana-Alt", max_reviews:150 },
+    { url:"https://mock.com/b", source_type:"mock", product_name:"CRMCloud", competitor_name:"Salesforce-Alt", max_reviews:150 },
+    { url:"https://mock.com/c", source_type:"mock", product_name:"DevTools", competitor_name:"Jira-Alt", max_reviews:150 },
+    { url:"https://mock.com/d", source_type:"mock", product_name:"MarketingHub", competitor_name:"HubSpot-Alt", max_reviews:100 },
+    { url:"https://mock.com/e", source_type:"mock", product_name:"DataPipeline", competitor_name:"Segment-Alt", max_reviews:100 },
+  ];
+
+  try {
+    const resp = await fetch('http://localhost:8000/api/v1/pipeline/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targets, alpha, beta, gamma,
+        complaint_rate_threshold: cr, competition_density_threshold: cd }),
+      signal: AbortSignal.timeout(120000),
+    });
+
+    if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+    const result = await resp.json();
+    renderDashboard(result.top_opportunities, {
+      total_reviews: result.total_reviews,
+      underserved_gaps: result.underserved_gaps,
+      total_clusters: result.total_clusters,
+    });
+    dot.textContent = `Pipeline complete · ${result.total_reviews} reviews`;
+    dot.style.color = 'var(--green)';
+  } catch (err) {
+    console.warn('API unavailable, using mock data:', err.message);
+    renderDashboard(MOCK_OPPORTUNITIES, MOCK_META);
+    dot.textContent = 'Demo mode (mock data)';
+    dot.style.color = 'var(--amber)';
+  } finally {
+    btn.classList.remove('loading');
+    btnText.innerHTML = '🚀 Run Analysis';
+  }
+}
+
+// ── Render ─────────────────────────────────────────────────────────────
+function renderDashboard(opportunities, meta) {
+  currentData = opportunities;
+
+  // KPIs
+  const gaps = opportunities.filter(o => o.is_underserved);
+  const avgCR = opportunities.reduce((s, o) => s + o.complaint_rate, 0) / opportunities.length;
+  const top = opportunities[0];
+
+  document.getElementById('kpiReviews').textContent = (meta.total_reviews || 0).toLocaleString();
+  document.getElementById('kpiReviewsDelta').textContent = 'Reviews analyzed';
+  document.getElementById('kpiClusters').textContent = meta.total_clusters || opportunities.length;
+  document.getElementById('kpiClustersDelta').textContent = 'Auto-clustered themes';
+  document.getElementById('kpiGaps').textContent = gaps.length;
+  document.getElementById('kpiGapsDelta').textContent = `${gaps.length} underserved clusters`;
+  document.getElementById('kpiGapsDelta').className = gaps.length > 0 ? 'kpi-delta' : 'kpi-delta neutral';
+  document.getElementById('kpiTopScore').textContent = top ? top.final_score.toFixed(3) : '—';
+  document.getElementById('kpiTopLabel').textContent = top ? top.label.substring(0, 22) + '...' : '—';
+  document.getElementById('kpiAvgComplaint').textContent = (avgCR * 100).toFixed(0) + '%';
+
+  // Hero card
+  if (top) {
+    document.getElementById('heroCard').style.display = 'grid';
+    document.getElementById('heroTitle').textContent = top.label;
+    document.getElementById('heroCR').textContent = (top.complaint_rate * 100).toFixed(0) + '%';
+    document.getElementById('heroCD').textContent = (top.competition_raw * 100).toFixed(0) + '%';
+    document.getElementById('heroVol').textContent = top.volume;
+    document.getElementById('heroKW').textContent = (top.top_keywords || []).slice(0, 3).join(', ');
+    document.getElementById('heroAction').textContent = top.recommended_action;
+    document.getElementById('gaugeScore').textContent = top.final_score.toFixed(3);
+
+    // Animate gauge
+    const pct = top.final_score;
+    const circumference = 157;
+    const offset = circumference * (1 - pct);
+    setTimeout(() => {
+      document.getElementById('gaugePath').style.strokeDashoffset = offset;
+    }, 100);
+  }
+
+  renderTable(opportunities);
+  renderCharts(opportunities);
+  renderExplorer(opportunities);
+}
+
+function renderTable(opps) {
+  const tbody = document.getElementById('oppTableBody');
+  tbody.innerHTML = opps.map(o => {
+    const scoreColor = o.final_score > 0.6 ? 'var(--green)' :
+                       o.final_score > 0.35 ? 'var(--amber)' : 'var(--grey-300)';
+    const fillWidth = (o.final_score * 100).toFixed(0) + '%';
+    const crPct = (o.complaint_rate * 100).toFixed(0) + '%';
+    const cdPct = (o.competition_raw * 100).toFixed(0) + '%';
+    const keywords = (o.top_keywords || []).slice(0, 3).map(k =>
+      `<span class="kw-tag">${k}</span>`).join('');
+    const badge = o.is_underserved
+      ? `<span class="gap-badge">🎯 GAP</span>`
+      : `<span class="covered-badge">—</span>`;
+
+    const actionShort = (o.recommended_action || '').split('.')[0] + '.';
+
+    return `<tr onclick="selectCluster(${o.cluster_index})" style="cursor:pointer">
+      <td class="rank-cell">#${o.rank}</td>
+      <td>
+        <div class="cluster-name">${o.label}</div>
+        <div class="cluster-keywords">${keywords}</div>
+      </td>
+      <td class="score-bar-cell">
+        <div class="score-bar">
+          <div class="score-bar-fill" style="width:${fillWidth};background:linear-gradient(90deg,var(--grad-1),var(--grad-3))"></div>
+        </div>
+        <div class="score-num" style="color:${scoreColor}">${o.final_score.toFixed(3)}</div>
+      </td>
+      <td class="pct-cell" style="color:${o.complaint_rate>0.35?'var(--red)':'var(--grey-500)'}">${crPct}</td>
+      <td class="pct-cell" style="color:${o.competition_raw<0.2?'var(--green)':'var(--grey-500)'}">${cdPct}</td>
+      <td style="font-weight:600;font-size:0.78rem">${o.volume}</td>
+      <td>${badge}</td>
+      <td><div class="action-text">${actionShort}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCharts(opps) {
+  // ── Scatter ──────────────────────────────────────────────────────
+  const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+  if (scatterChart) scatterChart.destroy();
+
+  const scatterData = opps.map(o => ({
+    x: o.competition_raw * 100,
+    y: o.complaint_rate * 100,
+    r: Math.max(5, Math.sqrt(o.volume) * 1.5),
+    label: o.label,
+    gap: o.is_underserved,
+  }));
+
+  scatterChart = new Chart(scatterCtx, {
+    type: 'bubble',
+    data: {
+      datasets: [
+        {
+          label: '🎯 Underserved Gap',
+          data: scatterData.filter(d => d.gap),
+          backgroundColor: 'rgba(239,68,68,0.65)',
+          borderColor: 'rgba(239,68,68,0.9)',
+          borderWidth: 2,
+        },
+        {
+          label: 'Addressed',
+          data: scatterData.filter(d => !d.gap),
+          backgroundColor: 'rgba(59,130,246,0.4)',
+          borderColor: 'rgba(59,130,246,0.6)',
+          borderWidth: 1,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'Inter', size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = ctx.raw;
+              return `${d.label || ''}: CR=${d.y?.toFixed(0)}% Cov=${d.x?.toFixed(0)}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Competition Coverage %', font: { size: 10 } },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+        },
+        y: {
+          title: { display: true, text: 'Complaint Rate %', font: { size: 10 } },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+        }
+      }
+    }
+  });
+
+  // ── Bar ──────────────────────────────────────────────────────────
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  if (barChart) barChart.destroy();
+
+  const sorted = [...opps].sort((a, b) => b.complaint_rate - a.complaint_rate);
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(o => o.label.substring(0, 22)),
+      datasets: [{
+        label: 'Complaint Rate %',
+        data: sorted.map(o => (o.complaint_rate * 100).toFixed(1)),
+        backgroundColor: sorted.map(o =>
+          o.is_underserved ? 'rgba(239,68,68,0.75)' : 'rgba(59,130,246,0.5)'
+        ),
+        borderRadius: 5,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // ── Stacked Score Breakdown ───────────────────────────────────────
+  const stackCtx = document.getElementById('stackedChart').getContext('2d');
+  if (stackedChart) stackedChart.destroy();
+
+  const top10 = opps.slice(0, 10);
+  stackedChart = new Chart(stackCtx, {
+    type: 'bar',
+    data: {
+      labels: top10.map(o => '#' + o.rank + ' ' + o.label.substring(0, 16)),
+      datasets: [
+        {
+          label: 'α·Demand',
+          data: top10.map(o => o.components?.['alpha * demand'] || 0),
+          backgroundColor: 'rgba(124,58,237,0.7)',
+          borderRadius: 3,
+          stack: 'score',
+        },
+        {
+          label: 'γ·Sentiment',
+          data: top10.map(o => o.components?.['gamma * neg_sentiment'] || 0),
+          backgroundColor: 'rgba(236,72,153,0.7)',
+          stack: 'score',
+        },
+        {
+          label: '-β·Competition',
+          data: top10.map(o => -(o.components?.['beta * competition'] || 0)),
+          backgroundColor: 'rgba(239,68,68,0.5)',
+          stack: 'score',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'Inter', size: 10 } } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 30 }, grid: { display: false } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderExplorer(opps) {
+  const listEl = document.getElementById('clusterListExplorer');
+  listEl.innerHTML = opps.map((o, i) => `
+    <div class="cluster-item${i === 0 ? ' selected' : ''}" onclick="selectExplorerCluster(${i})" id="explorerItem-${i}">
+      <div class="cluster-item-name">
+        ${o.is_underserved ? '🎯 ' : ''}${o.label}
+      </div>
+      <div class="cluster-item-stats">
+        <span class="cluster-stat">Score: <span>${o.final_score.toFixed(3)}</span></span>
+        <span class="cluster-stat">CR: <span>${(o.complaint_rate*100).toFixed(0)}%</span></span>
+        <span class="cluster-stat">Vol: <span>${o.volume}</span></span>
+      </div>
+    </div>
+  `).join('');
+
+  if (opps.length > 0) selectExplorerCluster(0);
+}
+
+function selectExplorerCluster(idx) {
+  if (!currentData) return;
+  const opps = currentData;
+  const o = opps[idx];
+  if (!o) return;
+
+  // Update selected state
+  document.querySelectorAll('.cluster-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+
+  const detail = document.getElementById('explorerDetail');
+  const keywords = (o.top_keywords || []).slice(0, 6).map(k =>
+    `<span class="kw-tag" style="font-size:0.7rem;padding:3px 8px">${k}</span>`).join('');
+
+  const reviews = (o.representative_reviews || []).slice(0, 3).map((r, i) =>
+    `<div class="review-item ${o.complaint_rate > 0.3 ? 'negative' : 'positive'}">"${r.substring(0, 180)}${r.length > 180 ? '...' : ''}"</div>`
+  ).join('');
+
+  const comps = o.components || {};
+  const compBars = Object.entries(comps).filter(([k]) => k !== 'confidence').map(([k, v]) => {
+    const isNeg = v < 0 || k.includes('competition');
+    const color = isNeg ? 'var(--red)' : 'var(--grad-1)';
+    const pct = Math.abs(v) * 200;
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="font-size:0.65rem;width:120px;color:var(--grey-500);text-align:right">${k}</div>
+      <div style="flex:1;height:6px;border-radius:3px;background:var(--grey-100)">
+        <div style="width:${Math.min(100,pct)}%;height:100%;border-radius:3px;background:${color}"></div>
+      </div>
+      <div style="font-size:0.65rem;font-family:monospace;color:${color};width:40px">${v.toFixed(3)}</div>
+    </div>`;
+  }).join('');
+
+  detail.innerHTML = `
+    <div>
+      <div class="detail-header">
+        <div class="detail-title">${o.is_underserved ? '🎯 ' : ''}${o.label}</div>
+        ${o.is_underserved ? '<span class="gap-badge">MARKET GAP</span>' : '<span class="covered-badge">Covered</span>'}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${keywords}</div>
+    </div>
+    <div class="detail-metrics">
+      <div class="detail-metric">
+        <div class="dm-value grad-text">${o.final_score.toFixed(3)}</div>
+        <div class="dm-label">Opp. Score</div>
+      </div>
+      <div class="detail-metric">
+        <div class="dm-value" style="color:${o.complaint_rate>0.35?'var(--red)':'var(--amber)'}">${(o.complaint_rate*100).toFixed(0)}%</div>
+        <div class="dm-label">Complaint Rate</div>
+      </div>
+      <div class="detail-metric">
+        <div class="dm-value" style="color:${o.competition_raw<0.2?'var(--green)':'var(--grey-500)'}">${(o.competition_raw*100).toFixed(0)}%</div>
+        <div class="dm-label">Coverage</div>
+      </div>
+      <div class="detail-metric">
+        <div class="dm-value">${o.volume}</div>
+        <div class="dm-label">Reviews</div>
+      </div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="card-title">🔬 Score Components</div>
+      ${compBars}
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="card-title">💡 Recommended Action</div>
+      <div style="font-size:0.85rem;line-height:1.6;color:var(--grey-700)">${o.recommended_action}</div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="card-title">🗣️ Representative Reviews</div>
+      <div class="reviews-list">${reviews || '<div style="color:var(--grey-300);font-size:0.8rem">No reviews available</div>'}</div>
+    </div>
+  `;
+}
+
+function selectCluster(clusterIndex) {
+  if (!currentData) return;
+  const idx = currentData.findIndex(o => o.cluster_index === clusterIndex);
+  if (idx >= 0) {
+    switchTab('explorer', document.querySelector('.tab:nth-child(3)'));
+    selectExplorerCluster(idx);
+  }
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'charts' && currentData) renderCharts(currentData);
+}
+
+// ── Wire up top button ────────────────────────────────────────────────
+document.getElementById('topRunBtn').addEventListener('click', runPipeline);
+
+// ── Auto-load demo data on page open ────────────────────────────────
+window.addEventListener('load', () => {
+  renderDashboard(MOCK_OPPORTUNITIES, MOCK_META);
+  document.getElementById('statusDot').textContent = 'Demo mode — click Run Pipeline';
+  document.getElementById('statusDot').style.color = 'var(--amber)';
+});
+</script>
+</body>
+</html>
