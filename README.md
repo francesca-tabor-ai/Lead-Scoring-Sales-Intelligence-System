@@ -150,24 +150,48 @@ python -m pytest tests/ -v
 
 ## ☁️ Deploying to AWS Lambda
 
-The app uses **sentence-transformers** and **scikit-learn**, so the full dependency set is ~7.5 GB. Lambda’s **500 MB limit** applies to zip deployments and to ephemeral storage when using “runtime dependency installation.” To avoid that limit, deploy the API as a **Lambda container image** (images can be up to **10 GB**).
+The app uses **sentence-transformers** and **scikit-learn**, so the full dependency set is ~7.5 GB. Lambda’s **500 MB limit** applies to **zip** deployments and to **runtime dependency installation**. You must deploy as a **Lambda container image** (up to **10 GB**) — do not use zip or “Install dependencies at runtime.”
 
-### Option 1: Lambda container image (recommended)
+### Deploy with AWS SAM (recommended)
 
-1. **Build the image:**
+The repo includes a SAM template that builds and deploys the API as a **container image** with 10 GB ephemeral storage. This avoids the “Total dependency size exceeds 500 MB” error.
+
+1. **Install** [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) and ensure **Docker** is running.
+
+2. **Build** (builds the Lambda container image from `Dockerfile.lambda`):
    ```bash
-   docker build -f Dockerfile.lambda -t lead-scoring-api .
+   sam build
    ```
 
-2. **Push to Amazon ECR** (in the same region as your Lambda function), then create or update the function to use that image.
+3. **Deploy** (first time use `--guided` to set stack name, region, etc.):
+   ```bash
+   sam deploy --guided
+   ```
+   Then for later updates:
+   ```bash
+   sam deploy
+   ```
 
-3. **Handler:** set to `api.lambda_handler.handler` (Mangum wraps FastAPI for Lambda).
+4. After deploy, the **API URL** is in the stack outputs (`LeadScoringApiUrl`). Use it like:
+   ```text
+   https://<id>.lambda-url.<region>.on.aws/
+   https://<id>.lambda-url.<region>.on.aws/api/v1/health
+   https://<id>.lambda-url.<region>.on.aws/docs
+   ```
 
-4. **Config:** give the function enough memory (e.g. 2–4 GB) and timeout (e.g. 5–15 min) for the pipeline. Increase **ephemeral storage** in the Lambda console if needed (up to 10 GB).
+The template sets: **PackageType: Image**, **EphemeralStorage: 10240 MB**, **MemorySize: 4096**, **Timeout: 900**.
 
-### Option 2: Zip deployment (slim API only)
+### Deploy with Docker + ECR (manual)
 
-To stay under 500 MB with a zip, you must remove heavy dependencies (e.g. `sentence-transformers`, `scikit-learn`, `streamlit`, `plotly`) and **not** run the full pipeline in Lambda—e.g. expose only health/config or queue work to another service. The current code path runs the full pipeline, so zip deployment is not supported without refactoring.
+1. Build: `docker build -f Dockerfile.lambda -t lead-scoring-api .`
+2. Tag and push the image to Amazon ECR in your region.
+3. Create (or update) a Lambda function from that image. Set **Handler** to `api.lambda_handler.handler`, **Ephemeral storage** to 10 GB, and add a **Function URL** if needed.
+
+### Why not zip?
+
+Zip (or “runtime dependency installation”) is limited to 500 MB. This app’s dependencies are ~7.5 GB, so deployment must use a **container image**.
+
+**If you still see “Total dependency size exceeds Lambda ephemeral storage limit (500 MB)”:** your deployment is using a **zip** or **runtime dependency installation**, not a container image. Switch to **SAM** (`sam build` then `sam deploy`) so the template’s `PackageType: Image` and `Dockerfile.lambda` are used, or deploy the Docker image to Lambda manually. Do not use “Deploy from zip” or options that install dependencies at runtime.
 
 ---
 

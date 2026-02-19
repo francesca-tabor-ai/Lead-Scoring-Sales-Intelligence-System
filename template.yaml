@@ -1,0 +1,51 @@
+# AWS SAM template — deploy as Lambda container image (avoids 500 MB zip limit).
+# Build:  sam build
+# Deploy: sam deploy --guided   (first time) then sam deploy
+# Requires: Docker running for sam build
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Lead Scoring Sales Intelligence API (FastAPI on Lambda, container image)
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 4096
+
+Resources:
+  LeadScoringApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      # Handler is set in the image CMD; override here for clarity
+      ImageConfig:
+        Command:
+          - api.lambda_handler.handler
+      # 10 GB ephemeral storage so full deps (sentence-transformers, sklearn) fit
+      EphemeralStorage:
+        Size: 10240
+      # Function URL: single HTTPS endpoint for the FastAPI app (no API Gateway)
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+          AllowMethods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          AllowHeaders:
+            - "*"
+    Metadata:
+      Dockerfile: Dockerfile.lambda
+      DockerContext: .
+      DockerTag: latest
+
+Outputs:
+  LeadScoringApiUrl:
+    Description: Invoke URL for the Lead Scoring API (FastAPI)
+    Value: !GetAtt LeadScoringApiFunctionUrl.FunctionUrl
+    Export:
+      Name: LeadScoringApiUrl
