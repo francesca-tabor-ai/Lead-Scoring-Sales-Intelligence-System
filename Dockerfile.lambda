@@ -1,0 +1,28 @@
+# Deploy as Lambda container image (avoids 500 MB zip limit; images up to 10 GB).
+# Build: docker build -f Dockerfile.lambda -t lead-scoring-api .
+# Push to ECR, then create/update Lambda function from image.
+# In Lambda config: set handler to api.lambda_handler.handler (or leave default if using AWS base image convention).
+
+FROM public.ecr.aws/lambda/python:3.11
+
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# System deps for building Python packages
+RUN yum install -y gcc gcc-c++ && yum clean all
+
+# Install Python dependencies (sentence-transformers, sklearn, etc. — large but fits in 10 GB image)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Application code
+COPY __init__.py .
+COPY main.py .
+COPY api/ api/
+COPY agents/ agents/
+COPY config/ config/
+COPY db/ db/
+COPY models/ models/
+COPY utils/ utils/
+
+# Lambda handler: Mangum wraps FastAPI for Lambda
+CMD ["api.lambda_handler.handler"]

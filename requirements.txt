@@ -29,3 +29,6 @@ pandas>=2.0.0
 python-dotenv>=1.0.0
 langdetect>=1.0.9
 httpx>=0.26.0
+
+# ─── Lambda (container image deployment) ─────────────────────────────────────
+mangum>=0.17.0

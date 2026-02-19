@@ -1,0 +1,22 @@
+# Lambda container image: exclude unneeded files to keep image smaller
+.git
+.gitignore
+.dockerignore
+*.md
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+.env
+.env.*
+*.db
+.DS_Store
+docker-compose.yml
+Dockerfile
+Dockerfile.lambda
+# Optional: uncomment to exclude dashboard/web from Lambda image
+# dashboard
+# web
+# tests

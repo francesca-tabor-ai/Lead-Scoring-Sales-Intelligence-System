@@ -148,6 +148,29 @@ python -m pytest tests/ -v
 
 ---
 
+## ☁️ Deploying to AWS Lambda
+
+The app uses **sentence-transformers** and **scikit-learn**, so the full dependency set is ~7.5 GB. Lambda’s **500 MB limit** applies to zip deployments and to ephemeral storage when using “runtime dependency installation.” To avoid that limit, deploy the API as a **Lambda container image** (images can be up to **10 GB**).
+
+### Option 1: Lambda container image (recommended)
+
+1. **Build the image:**
+   ```bash
+   docker build -f Dockerfile.lambda -t lead-scoring-api .
+   ```
+
+2. **Push to Amazon ECR** (in the same region as your Lambda function), then create or update the function to use that image.
+
+3. **Handler:** set to `api.lambda_handler.handler` (Mangum wraps FastAPI for Lambda).
+
+4. **Config:** give the function enough memory (e.g. 2–4 GB) and timeout (e.g. 5–15 min) for the pipeline. Increase **ephemeral storage** in the Lambda console if needed (up to 10 GB).
+
+### Option 2: Zip deployment (slim API only)
+
+To stay under 500 MB with a zip, you must remove heavy dependencies (e.g. `sentence-transformers`, `scikit-learn`, `streamlit`, `plotly`) and **not** run the full pipeline in Lambda—e.g. expose only health/config or queue work to another service. The current code path runs the full pipeline, so zip deployment is not supported without refactoring.
+
+---
+
 ## 🗺️ Architecture
 
 ```
