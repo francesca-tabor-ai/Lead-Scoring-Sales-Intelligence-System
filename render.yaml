@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: gapfinder-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: PORT
+        value: "8000"

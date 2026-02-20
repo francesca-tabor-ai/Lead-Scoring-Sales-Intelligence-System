@@ -1,0 +1,49 @@
+# ─── Python backend — NOT deployed to Vercel ───────────────────────────────
+# Vercel only serves web/ (pure static HTML/CSS/JS).
+# The Python API runs on Railway / Render / AWS Lambda (container image).
+
+agents/
+api/
+config/
+dashboard/
+db/
+models/
+tests/
+utils/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd
+*.pyw
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.env
+*.db
+*.sqlite3
+
+# Dependency files (backend only, not needed on Vercel)
+requirements.txt
+Dockerfile
+Dockerfile.lambda
+docker-compose.yml
+template.yaml
+
+# Root Python files
+main.py
+run.py
+__init__.py
+
+# CI/CD
+.github/
+
+# Local dev
+.env.example
+*.log

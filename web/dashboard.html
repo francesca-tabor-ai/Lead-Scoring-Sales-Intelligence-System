@@ -6,6 +6,7 @@
   <title>GapFinder — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -749,7 +750,7 @@
     </div>
     <div class="topbar-right">
       <div class="status-dot" id="statusDot">Pipeline ready</div>
-      <a class="topbar-btn btn-outline" href="http://localhost:8000/docs" target="_blank">API Docs</a>
+      <a class="topbar-btn btn-outline" id="apiDocsLink" href="#" target="_blank">API Docs</a>
       <button class="topbar-btn btn-black" id="topRunBtn">🚀 Run Pipeline</button>
     </div>
   </header>
@@ -976,6 +977,19 @@
 </div>
 
 <script>
+// ── API base URL ───────────────────────────────────────────────────────
+// Reads window.GAPFINDER_API_URL (injected by config.js or a CDN edge function)
+// then falls back to the same origin (useful when API + frontend are co-hosted),
+// then falls back to localhost for local development.
+const API_BASE_URL = (function () {
+  if (window.GAPFINDER_API_URL) return window.GAPFINDER_API_URL.replace(/\/$/, '');
+  const origin = window.location.origin;
+  if (!origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.includes('file://')) {
+    return origin; // co-hosted on Railway / Render
+  }
+  return 'http://localhost:8000';
+})();
+
 // ── Mock Data (used when API isn't running) ────────────────────────────
 const MOCK_OPPORTUNITIES = [
   { rank:1, cluster_index:2, label:"Mobile Checkout Simplification", top_keywords:["checkout","cart","payment","form","button"], final_score:0.782, complaint_rate:0.42, competition_raw:0.18, volume:89, is_underserved:true, recommended_action:"🚀 HIGH PRIORITY: Strong whitespace opportunity. 42% complaint rate with only 18% competitor coverage. Prioritize in next sprint.", demand_raw:0.18, components:{"alpha * demand":0.28,"beta * competition":0.05,"gamma * neg_sentiment":0.19}, representative_reviews:["The checkout is really frustrating. The button doesn't work properly. Makes it hard to use.","I keep having issues with payment. The form confusing doesn't work properly. Very disappointed.","The checkout UX needs a lot of work. Thinking of switching."] },
@@ -1021,7 +1035,7 @@ async function runPipeline() {
   ];
 
   try {
-    const resp = await fetch('http://localhost:8000/api/v1/pipeline/run', {
+    const resp = await fetch(`${API_BASE_URL}/api/v1/pipeline/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targets, alpha, beta, gamma,
@@ -1376,8 +1390,9 @@ function switchTab(name, btn) {
   if (name === 'charts' && currentData) renderCharts(currentData);
 }
 
-// ── Wire up top button ────────────────────────────────────────────────
+// ── Wire up top button + API docs link ───────────────────────────────
 document.getElementById('topRunBtn').addEventListener('click', runPipeline);
+document.getElementById('apiDocsLink').href = `${API_BASE_URL}/docs`;
 
 // ── Auto-load demo data on page open ────────────────────────────────
 window.addEventListener('load', () => {

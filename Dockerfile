@@ -1,26 +1,20 @@
-# ─── Build Stage ─────────────────────────────────────────────────────────────
-FROM python:3.11-slim AS base
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps
+# System deps for scikit-learn / lxml build
 RUN apt-get update && apt-get install -y \
     gcc g++ curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Python deps
+# Install Python deps first (cached layer)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # App code
 COPY . .
 
-# ─── API Image ───────────────────────────────────────────────────────────────
-FROM base AS api
 EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# ─── Dashboard Image ─────────────────────────────────────────────────────────
-FROM base AS dashboard
-EXPOSE 8501
-CMD ["streamlit", "run", "dashboard/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+# PORT env var is set by Railway/Render; falls back to 8000 locally
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
