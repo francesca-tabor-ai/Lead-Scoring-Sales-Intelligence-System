@@ -152,9 +152,29 @@ python -m pytest tests/ -v
 
 The app uses **sentence-transformers** and **scikit-learn**, so the full dependency set is ~7.5 GB. Lambda’s **500 MB limit** applies to **zip** deployments and to **runtime dependency installation**. You must deploy as a **Lambda container image** (up to **10 GB**) — do not use zip or “Install dependencies at runtime.”
 
-### Deploy with AWS SAM (recommended)
+### Fix the “500 MB” error
 
-The repo includes a SAM template that builds and deploys the API as a **container image** with 10 GB ephemeral storage. This avoids the “Total dependency size exceeds 500 MB” error.
+Use **only** one of these; anything else (zip upload, “Build from source”, “Install dependencies at runtime”, or a pipeline that packages code as zip) will hit the limit:
+
+| ✅ Use | ❌ Do not use |
+|--------|----------------|
+| **GitHub Action** below (container image) | Lambda “Create function” → “Build from source” / “Deploy from GitHub” (zip) |
+| **SAM**: `sam build` then `sam deploy` | Zip upload or “runtime dependency installation” |
+| **Docker** build + push to ECR + create Lambda from image | Any tool that deploys a .zip of your code + deps |
+
+### Deploy with GitHub Actions (container image)
+
+1. In the repo: **Settings → Secrets and variables → Actions**. Add:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+2. Optional: **Variables** → `SAM_STACK_NAME` (e.g. `lead-scoring-api`), or the workflow uses `lead-scoring-api`.
+3. Push to `main` or run **Actions → “Deploy Lambda (container image)” → Run workflow**.
+
+The workflow runs `sam build` (builds the image from `Dockerfile.lambda`) and `sam deploy` with `--resolve-image-repos`, so the function uses the container image and 10 GB ephemeral storage.
+
+### Deploy with AWS SAM (local)
+
+The repo includes a SAM template that builds and deploys the API as a **container image** with 10 GB ephemeral storage.
 
 1. **Install** [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) and ensure **Docker** is running.
 
